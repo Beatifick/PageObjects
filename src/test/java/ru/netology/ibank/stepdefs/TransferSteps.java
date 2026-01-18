@@ -2,7 +2,6 @@ package ru.netology.ibank.stepdefs;
 
 import io.cucumber.java.ru.*;
 import ru.netology.ibank.data.DataHelper;
-import ru.netology.ibank.data.DataHelper.CardInfo;
 import ru.netology.ibank.page.DashboardPage;
 import ru.netology.ibank.page.LoginPage;
 import ru.netology.ibank.page.TransferPage;
@@ -18,11 +17,11 @@ public class TransferSteps {
     private DashboardPage dashboardPage;
     private TransferPage transferPage;
 
-    private int fromCardBalanceBefore;
-    private int toCardBalanceBefore;
+    private int fromBalanceBefore;
+    private int toBalanceBefore;
 
-    private CardInfo firstCard = DataHelper.getFirstCard();
-    private CardInfo secondCard = DataHelper.getSecondCard();
+    private final DataHelper.CardInfo fromCard = DataHelper.getFirstCard();
+    private final DataHelper.CardInfo toCard = DataHelper.getSecondCard();
 
     @Дано("пользователь открывает страницу авторизации {string}")
     public void openLoginPage(String url) {
@@ -40,29 +39,27 @@ public class TransferSteps {
     }
 
     @Когда("пользователь выбирает карту {string} для пополнения")
-    public void selectCardToDeposit(String cardName) {
-        transferPage = dashboardPage.selectCardToDeposit(secondCard);
+    public void selectCardToDeposit(String ignored) {
+        fromBalanceBefore = dashboardPage.getCardBalance(fromCard.getId());
+        toBalanceBefore = dashboardPage.getCardBalance(toCard.getId());
+
+        transferPage = dashboardPage.selectCardToDeposit(toCard.getId());
     }
 
     @И("пользователь переводит {int} с карты {string}")
-    public void transferAmountFromCard(int amount, String fromCardName) {
-        fromCardBalanceBefore = dashboardPage.getCardBalance(firstCard);
-        toCardBalanceBefore = dashboardPage.getCardBalance(secondCard);
-
-        transferPage.transfer(amount, firstCard.getNumber());
-
-        dashboardPage = transferPage.returnToDashboard();
+    public void transferAmount(int amount, String ignored) {
+        dashboardPage = transferPage.transfer(amount, fromCard.getNumber());
     }
 
     @Тогда("баланс карты {string} уменьшается на {int}")
-    public void balanceDecreases(String cardName, int amount) {
-        int actualBalance = dashboardPage.getCardBalance(firstCard);
-        assertEquals(fromCardBalanceBefore - amount, actualBalance);
+    public void balanceDecreases(String ignored, int amount) {
+        int actual = dashboardPage.getCardBalance(fromCard.getId());
+        assertEquals(fromBalanceBefore - amount, actual);
     }
 
     @И("баланс карты {string} увеличивается на {int}")
-    public void balanceIncreases(String cardName, int amount) {
-        int actualBalance = dashboardPage.getCardBalance(secondCard);
-        assertEquals(toCardBalanceBefore + amount, actualBalance);
+    public void balanceIncreases(String ignored, int amount) {
+        int actual = dashboardPage.getCardBalance(toCard.getId());
+        assertEquals(toBalanceBefore + amount, actual);
     }
 }
