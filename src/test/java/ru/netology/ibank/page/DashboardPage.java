@@ -1,53 +1,25 @@
 package ru.netology.ibank.page;
 
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import static com.codeborne.selenide.Selenide.$$;
+import ru.netology.ibank.data.DataHelper.CardInfo;
+
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selenide.$;
 
 public class DashboardPage {
 
-    private final String balanceStart = "баланс: ";
-    private final String balanceFinish = " р.";
-    private final ElementsCollection cards = $$(".list__item div");
-
-    // Получение баланса по номеру карты
-    public int getCardBalance(String cardNumber) {
-        for (SelenideElement card : cards) {
-            if (card.text().contains(cardNumber)) {
-                return extractBalance(card.text());
-            }
-        }
-        throw new RuntimeException("Карта не найдена: " + cardNumber);
+    // Получить баланс карты по объекту CardInfo
+    public int getCardBalance(CardInfo card) {
+        SelenideElement element = $("[data-test-id='" + card.getId() + "']");
+        element.shouldBe(visible);
+        String text = element.getText(); // пример: "Balance: 10000 ₽"
+        String digits = text.replaceAll("[^0-9]", "");
+        return Integer.parseInt(digits);
     }
 
-    // Выбор карты для пополнения
-    public void selectCardToTransfer(String cardNumber) {
-        for (SelenideElement card : cards) {
-            if (card.text().contains(cardNumber)) {
-                card.$("button").click(); // нажимаем кнопку "Пополнить"
-                return;
-            }
-        }
-        throw new RuntimeException("Карта не найдена: " + cardNumber);
-    }
-
-    // Печать балансов всех карт в консоль
-    public void printAllBalances() {
-        System.out.println("=== Баланс всех карт ===");
-        for (SelenideElement card : cards) {
-            String text = card.text();
-            int balance = extractBalance(text);
-            String number = text.split(",")[0]; // берём номер карты до запятой
-            System.out.println(number + " → " + balance + " р.");
-        }
-        System.out.println("========================");
-    }
-
-    // Вырезаем баланс из текста
-    private int extractBalance(String text) {
-        int start = text.indexOf(balanceStart);
-        int finish = text.indexOf(balanceFinish);
-        String value = text.substring(start + balanceStart.length(), finish).replaceAll("\\s", "");
-        return Integer.parseInt(value);
+    // Выбрать карту для пополнения и перейти на страницу перевода
+    public TransferPage selectCardToDeposit(CardInfo card) {
+        $("[data-test-id='" + card.getId() + "'] [data-test-id=action-deposit]").click();
+        return new TransferPage();
     }
 }

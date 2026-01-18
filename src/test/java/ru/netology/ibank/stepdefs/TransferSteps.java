@@ -1,9 +1,8 @@
 package ru.netology.ibank.stepdefs;
 
-import io.cucumber.java.ru.Допустим;
-import io.cucumber.java.ru.И;
-import io.cucumber.java.ru.Когда;
-import io.cucumber.java.ru.Тогда;
+import io.cucumber.java.ru.*;
+import ru.netology.ibank.data.DataHelper;
+import ru.netology.ibank.data.DataHelper.CardInfo;
 import ru.netology.ibank.page.DashboardPage;
 import ru.netology.ibank.page.LoginPage;
 import ru.netology.ibank.page.TransferPage;
@@ -14,59 +13,56 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TransferSteps {
 
-    private final LoginPage loginPage = new LoginPage();
-    private final VerificationPage verificationPage = new VerificationPage();
-    private final DashboardPage dashboardPage = new DashboardPage();
-    private final TransferPage transferPage = new TransferPage();
+    private LoginPage loginPage;
+    private VerificationPage verificationPage;
+    private DashboardPage dashboardPage;
+    private TransferPage transferPage;
 
-    private int balanceBeforeFrom;
-    private int balanceBeforeTo;
-    private int transferAmount;
-    private String fromCardNumber;
-    private String toCardNumber;
+    private int fromCardBalanceBefore;
+    private int toCardBalanceBefore;
 
-    @Допустим("пользователь залогинен")
-    public void userLoggedIn() {
-        open("http://localhost:9999");
-        loginPage.login("vasya", "qwerty123");
-        verificationPage.verify("12345");
+    private CardInfo firstCard = DataHelper.getFirstCard();
+    private CardInfo secondCard = DataHelper.getSecondCard();
+
+    @Дано("пользователь открывает страницу авторизации {string}")
+    public void openLoginPage(String url) {
+        loginPage = open(url, LoginPage.class);
     }
 
-    @Когда("пользователь переводит {int} с карты {string} на карту {string}")
-    public void transferAmountFromCardToCard(int amount, String fromCard, String toCard) {
-        fromCardNumber = fromCard;
-        toCardNumber = toCard;
-        transferAmount = amount;
+    @И("пользователь вводит логин {string} и пароль {string}")
+    public void enterLoginAndPassword(String login, String password) {
+        verificationPage = loginPage.login(login, password);
+    }
 
-        balanceBeforeFrom = dashboardPage.getCardBalance(fromCard);
-        balanceBeforeTo = dashboardPage.getCardBalance(toCard);
+    @И("пользователь вводит код подтверждения {string}")
+    public void enterVerificationCode(String code) {
+        dashboardPage = verificationPage.verify(code);
+    }
 
-        dashboardPage.selectCardToTransfer(toCard);
-        transferPage.transfer(fromCard, amount);
+    @Когда("пользователь выбирает карту {string} для пополнения")
+    public void selectCardToDeposit(String cardName) {
+        transferPage = dashboardPage.selectCardToDeposit(secondCard);
+    }
+
+    @И("пользователь переводит {int} с карты {string}")
+    public void transferAmountFromCard(int amount, String fromCardName) {
+        fromCardBalanceBefore = dashboardPage.getCardBalance(firstCard);
+        toCardBalanceBefore = dashboardPage.getCardBalance(secondCard);
+
+        transferPage.transfer(amount, firstCard.getNumber());
+
+        dashboardPage = transferPage.returnToDashboard();
     }
 
     @Тогда("баланс карты {string} уменьшается на {int}")
-    public void balanceDecreases(String cardNumber, int expected) {
-        int actual = dashboardPage.getCardBalance(cardNumber);
-        if (cardNumber.equals(fromCardNumber)) {
-            assertEquals(balanceBeforeFrom - transferAmount, actual);
-        } else {
-            throw new RuntimeException("Неправильная карта для уменьшения баланса: " + cardNumber);
-        }
+    public void balanceDecreases(String cardName, int amount) {
+        int actualBalance = dashboardPage.getCardBalance(firstCard);
+        assertEquals(fromCardBalanceBefore - amount, actualBalance);
     }
 
     @И("баланс карты {string} увеличивается на {int}")
-    public void balanceIncreases(String cardNumber, int expected) {
-        int actual = dashboardPage.getCardBalance(cardNumber);
-        if (cardNumber.equals(toCardNumber)) {
-            assertEquals(balanceBeforeTo + transferAmount, actual);
-        } else {
-            throw new RuntimeException("Неправильная карта для увеличения баланса: " + cardNumber);
-        }
-    }
-
-    @И("показываем баланс всех карт")
-    public void showAllCardBalances() {
-        dashboardPage.printAllBalances();
+    public void balanceIncreases(String cardName, int amount) {
+        int actualBalance = dashboardPage.getCardBalance(secondCard);
+        assertEquals(toCardBalanceBefore + amount, actualBalance);
     }
 }
