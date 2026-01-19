@@ -1,10 +1,12 @@
 package ru.netology.ibank.stepdefs;
 
 import io.cucumber.java.ru.*;
+import io.cucumber.java.After;
 import ru.netology.ibank.data.DataHelper;
+import ru.netology.ibank.data.DataHelper.CardInfo;
 import ru.netology.ibank.page.DashboardPage;
-import ru.netology.ibank.page.LoginPage;
 import ru.netology.ibank.page.TransferPage;
+import ru.netology.ibank.page.LoginPage;
 import ru.netology.ibank.page.VerificationPage;
 
 import static com.codeborne.selenide.Selenide.open;
@@ -17,49 +19,53 @@ public class TransferSteps {
     private DashboardPage dashboardPage;
     private TransferPage transferPage;
 
-    private int fromBalanceBefore;
-    private int toBalanceBefore;
+    private int transferAmount;
 
-    private final DataHelper.CardInfo fromCard = DataHelper.getFirstCard();
-    private final DataHelper.CardInfo toCard = DataHelper.getSecondCard();
+    private CardInfo firstCard = DataHelper.getFirstCard();
+    private CardInfo secondCard = DataHelper.getSecondCard();
 
-    @Дано("пользователь открывает страницу авторизации {string}")
-    public void openLoginPage(String url) {
-        loginPage = open(url, LoginPage.class);
+
+
+    @Дано("пользователь залогинен с именем {string} и паролем {string}")
+    public void login(String login, String password) {
+        loginPage = open("http://localhost:9999", LoginPage.class);
+        loginPage.login(login, password);
+        verificationPage = new VerificationPage();
+        verificationPage.verify(DataHelper.getVerificationCode().getCode());
+        dashboardPage = new DashboardPage();
     }
 
-    @И("пользователь вводит логин {string} и пароль {string}")
-    public void enterLoginAndPassword(String login, String password) {
-        verificationPage = loginPage.login(login, password);
+    @Когда("пользователь переводит {int} рублей с карты с номером {string} на свою первую карту с главной страницы")
+    public void transferToFirstCard(int amount, String fromCardNumber) {
+        transferAmount = amount;
+        transferPage = dashboardPage.selectCardToDeposit(firstCard);
+        transferPage.transfer(amount, fromCardNumber);
     }
 
-    @И("пользователь вводит код подтверждения {string}")
-    public void enterVerificationCode(String code) {
-        dashboardPage = verificationPage.verify(code);
+    @Тогда("баланс его первой карты из списка на главной странице должен стать {int} рублей")
+    public void firstCardBalanceShouldBe(int expectedBalance) {
+        int actual = dashboardPage.getCardBalance(firstCard);
+        assertEquals(expectedBalance, actual);
     }
 
-    @Когда("пользователь выбирает карту {string} для пополнения")
-    public void selectCardToDeposit(String ignored) {
-        fromBalanceBefore = dashboardPage.getCardBalance(fromCard.getId());
-        toBalanceBefore = dashboardPage.getCardBalance(toCard.getId());
+    @After
+    public void returnMoneyToOriginal() {
+        int targetBalance = 10000;
 
-        transferPage = dashboardPage.selectCardToDeposit(toCard.getId());
-    }
+        // Перезапускаем dashboardPage заново
+        dashboardPage = new DashboardPage();
 
-    @И("пользователь переводит {int} с карты {string}")
-    public void transferAmount(int amount, String ignored) {
-        dashboardPage = transferPage.transfer(amount, fromCard.getNumber());
-    }
+        int firstBalance = dashboardPage.getCardBalance(firstCard);
+        int secondBalance = dashboardPage.getCardBalance(secondCard);
 
-    @Тогда("баланс карты {string} уменьшается на {int}")
-    public void balanceDecreases(String ignored, int amount) {
-        int actual = dashboardPage.getCardBalance(fromCard.getId());
-        assertEquals(fromBalanceBefore - amount, actual);
-    }
-
-    @И("баланс карты {string} увеличивается на {int}")
-    public void balanceIncreases(String ignored, int amount) {
-        int actual = dashboardPage.getCardBalance(toCard.getId());
-        assertEquals(toBalanceBefore + amount, actual);
+        if (firstBalance > targetBalance) {
+            int diff = firstBalance - targetBalance;
+            transferPage = dashboardPage.selectCardToDeposit(secondCard);
+            transferPage.transfer(diff, firstCard.getNumber());
+        } else if (firstBalance < targetBalance) {
+            int diff = targetBalance - firstBalance;
+            transferPage = dashboardPage.selectCardToDeposit(firstCard);
+            transferPage.transfer(diff, secondCard.getNumber());
+        }
     }
 }

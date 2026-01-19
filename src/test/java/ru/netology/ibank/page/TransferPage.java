@@ -6,19 +6,14 @@ import static com.codeborne.selenide.Selenide.$;
 
 public class TransferPage {
 
-    private final SelenideElement amountField =
-            $("[data-test-id=amount] input");
+    private final SelenideElement amountField = $("[data-test-id=amount] input");
+    private final SelenideElement fromField = $("[data-test-id=from] input");
+    private final SelenideElement transferButton = $("[data-test-id=action-transfer]");
 
-    private final SelenideElement fromField =
-            $("[data-test-id=from] input");
-
-    private final SelenideElement transferButton =
-            $("[data-test-id=action-transfer]");
-
-    public DashboardPage transfer(int amount, String fromCardNumber) {
+    // Выполняем перевод: сумма + карта отправителя
+    public void transfer(int amount, String fromCardNumber) {
         amountField.setValue(String.valueOf(amount));
         fromField.setValue(fromCardNumber);
         transferButton.click();
-        return new DashboardPage();
     }
 }
