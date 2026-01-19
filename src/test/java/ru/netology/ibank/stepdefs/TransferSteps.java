@@ -1,7 +1,6 @@
 package ru.netology.ibank.stepdefs;
 
 import io.cucumber.java.ru.*;
-import io.cucumber.java.After;
 import ru.netology.ibank.data.DataHelper;
 import ru.netology.ibank.data.DataHelper.CardInfo;
 import ru.netology.ibank.page.DashboardPage;
@@ -46,26 +45,5 @@ public class TransferSteps {
     public void firstCardBalanceShouldBe(int expectedBalance) {
         int actual = dashboardPage.getCardBalance(firstCard);
         assertEquals(expectedBalance, actual);
-    }
-
-    @After
-    public void returnMoneyToOriginal() {
-        int targetBalance = 10000;
-
-        // Перезапускаем dashboardPage заново
-        dashboardPage = new DashboardPage();
-
-        int firstBalance = dashboardPage.getCardBalance(firstCard);
-        int secondBalance = dashboardPage.getCardBalance(secondCard);
-
-        if (firstBalance > targetBalance) {
-            int diff = firstBalance - targetBalance;
-            transferPage = dashboardPage.selectCardToDeposit(secondCard);
-            transferPage.transfer(diff, firstCard.getNumber());
-        } else if (firstBalance < targetBalance) {
-            int diff = targetBalance - firstBalance;
-            transferPage = dashboardPage.selectCardToDeposit(firstCard);
-            transferPage.transfer(diff, secondCard.getNumber());
-        }
     }
 }
