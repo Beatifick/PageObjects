@@ -34,18 +34,13 @@ public class TransferSteps {
     @Когда("пользователь переводит {int} рублей с карты с номером {string} на свою {int} карту с главной страницы")
     public void transferMoney(int amount, String fromCardNumber, int toCardIndex) {
 
-        CardInfo toCard = (toCardIndex == 1)
-                ? DataHelper.getFirstCard()
-                : DataHelper.getSecondCard();
-
-        transferPage = dashboardPage.selectCardToDeposit(toCard);
-        transferPage.transfer(amount, fromCardNumber);
+        transferPage = dashboardPage.selectCardToDeposit(toCardIndex);
+        dashboardPage = transferPage.transfer(amount, fromCardNumber);
     }
 
     @Тогда("баланс его {int} карты из списка на главной странице должен стать {int} рублей")
-    public void cardBalanceShouldBeByIndex(int cardIndex, int expectedBalance) {
-        CardInfo card = (cardIndex == 1) ? DataHelper.getFirstCard() : DataHelper.getSecondCard();
-        int actual = dashboardPage.getCardBalance(card);
+    public void balanceShouldBe(int cardIndex, int expectedBalance) {
+        int actual = dashboardPage.getCardBalance(cardIndex);
         assertEquals(expectedBalance, actual);
     }
 }

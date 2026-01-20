@@ -9,24 +9,22 @@ import static com.codeborne.selenide.Selenide.$$;
 
 public class DashboardPage {
 
-    private final ElementsCollection cards = $$(".list__item div"); // все элементы с data-test-id
+    private final ElementsCollection cards = $$(".list__item"); // все элементы с data-test-id
 
     private final String balanceStart = "баланс: ";
     private final String balanceFinish = " р.";
 
     // Получение баланса карты
-    public int getCardBalance(CardInfo card) {
-        SelenideElement cardElement = cards.findBy(Condition.attribute("data-test-id", card.getId()))
-                .shouldBe(Condition.visible);
-        String text = cardElement.getText();
+    public int getCardBalance(int cardIndex) {
+        String text = cards.get(cardIndex - 1).getText();
         return extractBalance(text);
     }
 
     // Выбор карты для пополнения
-    public TransferPage selectCardToDeposit(CardInfo card) {
-        SelenideElement cardElement = cards.findBy(Condition.attribute("data-test-id", card.getId()))
-                .shouldBe(Condition.visible);
-        cardElement.$("[data-test-id=action-deposit]").click();
+    public TransferPage selectCardToDeposit(int cardIndex) {
+        cards.get(cardIndex - 1)
+                .$("[data-test-id=action-deposit]")
+                .click();
         return new TransferPage();
     }
 
