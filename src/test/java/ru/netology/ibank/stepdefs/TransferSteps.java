@@ -31,18 +31,15 @@ public class TransferSteps {
         dashboardPage = new DashboardPage();
     }
 
-    @Когда("пользователь переводит {int} рублей с карты {int} на свою {int} карту с главной страницы")
-    public void transferMoneyByCardIndex(int amount, int fromCardIndex, int toCardIndex) {
-        transferAmount = amount;
+    @Когда("пользователь переводит {int} рублей с карты с номером {string} на свою {int} карту с главной страницы")
+    public void transferMoney(int amount, String fromCardNumber, int toCardIndex) {
 
-        CardInfo fromCard = (fromCardIndex == 1) ? DataHelper.getFirstCard() : DataHelper.getSecondCard();
-        CardInfo toCard = (toCardIndex == 1) ? DataHelper.getFirstCard() : DataHelper.getSecondCard();
+        CardInfo toCard = (toCardIndex == 1)
+                ? DataHelper.getFirstCard()
+                : DataHelper.getSecondCard();
 
-        // Выбираем карту для пополнения (получатель)
         transferPage = dashboardPage.selectCardToDeposit(toCard);
-
-        // Вводим сумму и карту отправителя, затем перевод
-        transferPage.transfer(amount, fromCard.getNumber());
+        transferPage.transfer(amount, fromCardNumber);
     }
 
     @Тогда("баланс его {int} карты из списка на главной странице должен стать {int} рублей")
