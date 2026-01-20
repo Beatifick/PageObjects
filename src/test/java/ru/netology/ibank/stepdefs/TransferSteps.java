@@ -20,30 +20,35 @@ public class TransferSteps {
 
     private int transferAmount;
 
-    private CardInfo firstCard = DataHelper.getFirstCard();
-    private CardInfo secondCard = DataHelper.getSecondCard();
-
-
-
     @Дано("пользователь залогинен с именем {string} и паролем {string}")
     public void login(String login, String password) {
         loginPage = open("http://localhost:9999", LoginPage.class);
         loginPage.login(login, password);
+
         verificationPage = new VerificationPage();
         verificationPage.verify(DataHelper.getVerificationCode().getCode());
+
         dashboardPage = new DashboardPage();
     }
 
-    @Когда("пользователь переводит {int} рублей с карты с номером {string} на свою первую карту с главной страницы")
-    public void transferToFirstCard(int amount, String fromCardNumber) {
+    @Когда("пользователь переводит {int} рублей с карты {int} на свою {int} карту с главной страницы")
+    public void transferMoneyByCardIndex(int amount, int fromCardIndex, int toCardIndex) {
         transferAmount = amount;
-        transferPage = dashboardPage.selectCardToDeposit(firstCard);
-        transferPage.transfer(amount, fromCardNumber);
+
+        CardInfo fromCard = (fromCardIndex == 1) ? DataHelper.getFirstCard() : DataHelper.getSecondCard();
+        CardInfo toCard = (toCardIndex == 1) ? DataHelper.getFirstCard() : DataHelper.getSecondCard();
+
+        // Выбираем карту для пополнения (получатель)
+        transferPage = dashboardPage.selectCardToDeposit(toCard);
+
+        // Вводим сумму и карту отправителя, затем перевод
+        transferPage.transfer(amount, fromCard.getNumber());
     }
 
-    @Тогда("баланс его первой карты из списка на главной странице должен стать {int} рублей")
-    public void firstCardBalanceShouldBe(int expectedBalance) {
-        int actual = dashboardPage.getCardBalance(firstCard);
+    @Тогда("баланс его {int} карты из списка на главной странице должен стать {int} рублей")
+    public void cardBalanceShouldBeByIndex(int cardIndex, int expectedBalance) {
+        CardInfo card = (cardIndex == 1) ? DataHelper.getFirstCard() : DataHelper.getSecondCard();
+        int actual = dashboardPage.getCardBalance(card);
         assertEquals(expectedBalance, actual);
     }
 }

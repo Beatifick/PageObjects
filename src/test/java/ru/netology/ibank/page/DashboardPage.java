@@ -9,7 +9,10 @@ import static com.codeborne.selenide.Selenide.$$;
 
 public class DashboardPage {
 
-    private final ElementsCollection cards = $$("[data-test-id]"); // все элементы с data-test-id
+    private final ElementsCollection cards = $$(".list__item div"); // все элементы с data-test-id
+
+    private final String balanceStart = "баланс: ";
+    private final String balanceFinish = " р.";
 
     // Получение баланса карты
     public int getCardBalance(CardInfo card) {
@@ -21,17 +24,15 @@ public class DashboardPage {
 
     // Выбор карты для пополнения
     public TransferPage selectCardToDeposit(CardInfo card) {
-        cards.findBy(Condition.attribute("data-test-id", card.getId()))
-                .shouldBe(Condition.visible)
-                .$("[data-test-id=action-deposit]")
-                .click();
+        SelenideElement cardElement = cards.findBy(Condition.attribute("data-test-id", card.getId()))
+                .shouldBe(Condition.visible);
+        cardElement.$("[data-test-id=action-deposit]").click();
         return new TransferPage();
     }
 
-    // Вырезаем баланс из текста вида "**** **** **** 0001, баланс: 15000 р."
     private int extractBalance(String text) {
-        int start = text.indexOf("баланс: ") + 8;
-        int end = text.indexOf(" р.", start);
+        int start = text.indexOf(balanceStart) + balanceStart.length();
+        int end = text.indexOf(balanceFinish, start);
         String value = text.substring(start, end).trim().replace(" ", "");
         return Integer.parseInt(value);
     }
